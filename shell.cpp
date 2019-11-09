@@ -50,7 +50,6 @@ vector<string> split (string line, string separator=" "){
         if (segment.size() != 0) 
             result.push_back (segment);
 
-        
         //cout << line << endl;
     }
     return result;
@@ -68,6 +67,9 @@ char** vec_to_char_array (vector<string> parts){
 }
 
 void execute (string command){
+    // get rid of spaces and quote chars
+
+
     vector<string> argstrings = split (command, " "); // split the command into space-separated parts
     char** args = vec_to_char_array (argstrings);// convert vec<string> into an array of char*
 
@@ -79,7 +81,7 @@ void execute (string command){
     {
         if(argstrings[1] == "-")
         {
-            chdir((char*)"..");
+            chdir("..");
             cout << getcwd(cwd, sizeof(cwd)) << endl;
         }
         else{
@@ -92,16 +94,76 @@ void execute (string command){
     }
 }
 
+string encode(string newString)
+{
+    int quoteCount = 0;
+    int singleQuoteCount = 0;
 
+    for (int i = 0; i < newString.length(); i++) {
+        if(newString[i] == '"')
+        {
+            quoteCount++;
+        }
+        else if(newString[i] == '\'')
+        {
+            singleQuoteCount++;
+        }
+
+        if(quoteCount % 2 != 0 || singleQuoteCount %2 != 0) // if we haven't encountered an ending quotation mark
+        {
+            if (newString[i] == '|')
+            {
+                newString[i] = '^';
+            }
+            else if(newString[i] == '>')
+            {
+                newString[i] = '!';
+            }
+            else if(newString[i] == '<')
+            {
+                newString[i] = '@';
+            }
+        }
+    }
+    return newString;
+}
+
+vector<string> decode(vector<string> tparts)
+{
+    for (int i = 0; i < tparts.size(); i++) 
+    {
+        string currentString = tparts[i];
+        for (int j = 0; j < currentString.length(); j++) 
+        {
+            if(currentString[j] == '^')
+            {
+                currentString[j] = '|';
+            }
+            else if(currentString[j] == '!')
+            {
+                currentString[j] = '>';
+            }
+            else if(currentString[j] == '@')
+            {
+                currentString[j] = '<';
+            }
+        }
+        tparts[i] = currentString;
+    }
+    return tparts;
+}
 
 int main (){
     while (true){ // repeat this loop until the user presses Ctrl + C
-        string commandline = "";/*get from STDIN, e.g., "ls  -la |   grep Jul  | grep . | grep .cpp" */
         cout << "$ ";
+        string commandline = "";/*get from STDIN, e.g., "ls  -la |   grep Jul  | grep . | grep .cpp" */
         getline(cin,commandline);
+        commandline = encode(commandline);
+
         // split the command by the "|", which tells you the pipe levels
         vector<string> tparts = split (commandline, "|");
-        
+        tparts = decode(tparts);
+
         int originalFd = dup(0); // to redirect stdin back to console at end of parent process 
 
         // for each pipe, do the following:
