@@ -9,6 +9,16 @@
 
 using namespace std;
 
+void debugPrint(vector<string> vec)
+{
+    for(int i = 0; i < vec.size(); i++){
+        cout << vec[i];
+    }
+}
+
+// for storing OLDPDW for $ cd -
+string oldCD;
+
 string trim (string input){
     int i=0;
     while (i < input.size() && input [i] == ' ')
@@ -67,29 +77,34 @@ char** vec_to_char_array (vector<string> parts){
     return result;
 }
 
+// string previousDirectory = "";
+
 void execute (string command){
     // get rid of spaces and quote chars
-
     vector<string> argstrings = split (command, " "); // split the command into space-separated parts
     char** args = vec_to_char_array (argstrings);// convert vec<string> into an array of char*
 
-    // for printing current directory to console
-    char cwd[1024];
+    // for storing oldCD (global variable)
+    char cwd[1024];   
+
+    string currDirec = getcwd(cwd, sizeof(cwd));
 
     // for cd implementation
     if (argstrings[0] == "cd")
     {
         if(argstrings[1] == "-")
         {
-            chdir("..");
-            cout << getcwd(cwd, sizeof(cwd)) << endl;
+            if (oldCD != "") {
+                chdir(oldCD.c_str());
+            }
         }
-        else{
+        else {
             chdir(args[1]);
-            //cout << getcwd(cwd, sizeof(cwd)) << endl;
         }
+       oldCD = currDirec;
     }
-    else{
+
+    else {
         execvp (args[0], args);
     }
 }
@@ -115,16 +130,17 @@ string encode(string newString)
             {
                 newString[i] = '\a';
             }
-            else if(newString[i] == '\v')
+            else if(newString[i] == '>')
             {
-                newString[i] = '!';
+                newString[i] = '\v';
             }
-            else if(newString[i] == '\f')
+            else if(newString[i] == '<')
             {
-                newString[i] = '@';
+                newString[i] = '\f';
             }
         }
     }
+    cout << newString << endl;
     return newString;
 }
 
@@ -183,7 +199,7 @@ vector<string> removeSpaces(vector<string> tparts)
 
             if(currentString[j] == ' ' && bracketCount % 2 != 0)
             {
-                
+
             }
             else
             {
@@ -197,6 +213,7 @@ vector<string> removeSpaces(vector<string> tparts)
 }
 
 int main (){
+
     while (true){ // repeat this loop until the user presses Ctrl + C
 
         // user prompt
@@ -214,8 +231,6 @@ int main (){
         vector<string> tparts = split (commandline, "|");
         tparts = decode(tparts);
         tparts = removeSpaces(tparts);
-
-
 
         int originalFd = dup(0); // to redirect stdin back to console at end of parent process 
 
