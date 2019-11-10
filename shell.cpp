@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/wait.h>
+#include <time.h>
 
 using namespace std;
 
@@ -69,7 +70,6 @@ char** vec_to_char_array (vector<string> parts){
 void execute (string command){
     // get rid of spaces and quote chars
 
-
     vector<string> argstrings = split (command, " "); // split the command into space-separated parts
     char** args = vec_to_char_array (argstrings);// convert vec<string> into an array of char*
 
@@ -108,18 +108,18 @@ string encode(string newString)
         {
             singleQuoteCount++;
         }
-
+        
         if(quoteCount % 2 != 0 || singleQuoteCount %2 != 0) // if we haven't encountered an ending quotation mark
         {
             if (newString[i] == '|')
             {
-                newString[i] = '^';
+                newString[i] = '\a';
             }
-            else if(newString[i] == '>')
+            else if(newString[i] == '\v')
             {
                 newString[i] = '!';
             }
-            else if(newString[i] == '<')
+            else if(newString[i] == '\f')
             {
                 newString[i] = '@';
             }
@@ -130,32 +130,82 @@ string encode(string newString)
 
 vector<string> decode(vector<string> tparts)
 {
+    vector<string> newParts;
     for (int i = 0; i < tparts.size(); i++) 
     {
         string currentString = tparts[i];
+        string newString;
+        int bracketCount = 0;
         for (int j = 0; j < currentString.length(); j++) 
         {
-            if(currentString[j] == '^')
+            if(newString[i] == '{' || newString[i] == '}')
             {
-                currentString[j] = '|';
+                bracketCount++;
             }
-            else if(currentString[j] == '!')
+
+            if(currentString[j] == '\a')
             {
-                currentString[j] = '>';
+                newString += '|';
             }
-            else if(currentString[j] == '@')
+            else if(currentString[j] == '\v')
             {
-                currentString[j] = '<';
+                newString[j] += '>';
             }
+            else if(currentString[j] == '\f')
+            {
+                newString += '<';
+            }
+            else if (currentString[j] != '"' && currentString[j] != '\''){
+                newString += currentString[j];
+            }
+            
         }
-        tparts[i] = currentString;
+        tparts[i] = newString;
     }
+    return tparts;
+}
+
+vector<string> removeSpaces(vector<string> tparts)
+{
+    int bracketCount = 0;
+
+    for (int i = 0; i < tparts.size(); i++) 
+    {
+        string currentString = tparts[i];
+        string newString = "";
+        int bracketCount = 0;
+
+        for (int j = 0; j < currentString.length(); j++) {
+            if(currentString[j] == '}' || currentString[j] == '{')
+            {
+                bracketCount++;
+            }
+
+            if(currentString[j] == ' ' && bracketCount % 2 != 0)
+            {
+                
+            }
+            else
+            {
+                newString += currentString[j];
+            }
+        } 
+        tparts[i] = newString;
+    }
+
     return tparts;
 }
 
 int main (){
     while (true){ // repeat this loop until the user presses Ctrl + C
-        cout << "$ ";
+
+        // user prompt
+        char cwd[1024];
+        time_t currentTime = time(NULL);
+        char* date = asctime(localtime(&currentTime));
+        date[strlen(date) - 1] = '\0';
+        cout << date << " " << getenv("USER") << getcwd(cwd, sizeof(cwd)) << "$ ";
+
         string commandline = "";/*get from STDIN, e.g., "ls  -la |   grep Jul  | grep . | grep .cpp" */
         getline(cin,commandline);
         commandline = encode(commandline);
@@ -163,6 +213,9 @@ int main (){
         // split the command by the "|", which tells you the pipe levels
         vector<string> tparts = split (commandline, "|");
         tparts = decode(tparts);
+        tparts = removeSpaces(tparts);
+
+
 
         int originalFd = dup(0); // to redirect stdin back to console at end of parent process 
 
