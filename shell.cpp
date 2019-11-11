@@ -219,12 +219,22 @@ int main (){
 
         int originalFd = dup(0); // to redirect stdin back to console at end of parent process 
 
+        vector<int> pidVector;
         // for each pipe, do the following:
         for (int i=0; i<tparts.size(); i++){
             // make pipe
             int fd[2];
             pipe(fd);
-			if (!fork()){
+            
+            // if ampersand exists, push pid to vector
+            int pid = fork();
+            int ampersandLoc = tparts[i].find('&');
+            if(ampersandLoc != string::npos)
+            {
+                pidVector.push_back(pid);
+            }
+
+			if (!pid){
 
                 if(tparts[i].find('>') != -1)
                 {
@@ -255,7 +265,19 @@ int main (){
                 // find out all the arguments, see the definition
                 execute (tparts [i]); // this is where you execute
             }else{
-                wait(0);            // wait for the child process
+                if(ampersandLoc != string::npos)
+                {
+                    for(int i = 0; i < pidVector.size(); i++)
+                        {
+                            waitpid(pidVector[i], 0, WNOHANG);
+                        }
+                }
+                else
+                {
+                    wait(0); // wait for child process
+                }
+                
+                // wait(0);            // wait for the child process
                 dup2 (fd [0], 0);
                 close (fd [1]);
 				// then do other redirects
