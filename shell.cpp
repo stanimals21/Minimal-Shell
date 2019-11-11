@@ -232,6 +232,7 @@ int main (){
             if(ampersandLoc != string::npos)
             {
                 pidVector.push_back(pid);
+                tparts[i] = tparts[i].substr(0, ampersandLoc-1);
             }
 
 			if (!pid){
@@ -268,9 +269,9 @@ int main (){
                 if(ampersandLoc != string::npos)
                 {
                     for(int i = 0; i < pidVector.size(); i++)
-                        {
-                            waitpid(pidVector[i], 0, WNOHANG);
-                        }
+                    {
+                        waitpid(pidVector[i], 0, WNOHANG);
+                    }
                 }
                 else
                 {
