@@ -6,15 +6,12 @@
 #include <string.h>
 #include <sys/wait.h>
 #include <time.h>
+#include <fcntl.h>
+#include <stdio.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 using namespace std;
-
-void debugPrint(vector<string> vec)
-{
-    for(int i = 0; i < vec.size(); i++){
-        cout << vec[i];
-    }
-}
 
 // for storing OLDPDW for $ cd -
 string oldCD;
@@ -38,8 +35,6 @@ string trim (string input){
         return "";
     
     return input;
-    
-
 }
 
 vector<string> split (string line, string separator=" "){
@@ -77,19 +72,16 @@ char** vec_to_char_array (vector<string> parts){
     return result;
 }
 
-// string previousDirectory = "";
-
 void execute (string command){
     // get rid of spaces and quote chars
     vector<string> argstrings = split (command, " "); // split the command into space-separated parts
     char** args = vec_to_char_array (argstrings);// convert vec<string> into an array of char*
 
     // for storing oldCD (global variable)
-    char cwd[1024];   
-
+    char cwd[1024];  
+    // for cd implementation
     string currDirec = getcwd(cwd, sizeof(cwd));
 
-    // for cd implementation
     if (argstrings[0] == "cd")
     {
         if(argstrings[1] == "-")
@@ -103,7 +95,6 @@ void execute (string command){
         }
        oldCD = currDirec;
     }
-
     else {
         execvp (args[0], args);
     }
@@ -140,7 +131,7 @@ string encode(string newString)
             }
         }
     }
-    cout << newString << endl;
+    //cout << newString << endl;
     return newString;
 }
 
@@ -154,11 +145,6 @@ vector<string> decode(vector<string> tparts)
         int bracketCount = 0;
         for (int j = 0; j < currentString.length(); j++) 
         {
-            if(newString[i] == '{' || newString[i] == '}')
-            {
-                bracketCount++;
-            }
-
             if(currentString[j] == '\a')
             {
                 newString += '|';
@@ -174,7 +160,6 @@ vector<string> decode(vector<string> tparts)
             else if (currentString[j] != '"' && currentString[j] != '\''){
                 newString += currentString[j];
             }
-            
         }
         tparts[i] = newString;
     }
@@ -221,7 +206,7 @@ int main (){
         time_t currentTime = time(NULL);
         char* date = asctime(localtime(&currentTime));
         date[strlen(date) - 1] = '\0';
-        cout << date << " " << getenv("USER") << getcwd(cwd, sizeof(cwd)) << "$ ";
+        cout << date << " " << getenv("USER") << ":" << getcwd(cwd, sizeof(cwd)) << "$ ";
 
         string commandline = "";/*get from STDIN, e.g., "ls  -la |   grep Jul  | grep . | grep .cpp" */
         getline(cin,commandline);
@@ -230,9 +215,11 @@ int main (){
         // split the command by the "|", which tells you the pipe levels
         vector<string> tparts = split (commandline, "|");
         tparts = decode(tparts);
-        tparts = removeSpaces(tparts);
+        tparts = removeSpaces(tparts);        
 
         int originalFd = dup(0); // to redirect stdin back to console at end of parent process 
+        int outIndex = -1;
+        int inIndex = -1;
 
         // for each pipe, do the following:
         for (int i=0; i<tparts.size(); i++){
@@ -240,6 +227,49 @@ int main (){
             int fd[2];
             pipe(fd);
 			if (!fork()){
+
+                if(tparts[i].find('>') != -1)
+                {
+                    outIndex = tparts[i].find('>');
+                    string fileName = tparts[i].substr(outIndex+1);
+
+                    // remove spaces from fileName
+                    string temp;
+                    for(int i = 0; i < fileName.size(); i++)
+                    {
+                        if (fileName[i] != ' ')
+                        {
+                            temp = temp + fileName[i];
+                        }
+                    }
+                    fileName = temp;
+
+                    int fd = open (fileName.c_str(), O_CREAT|O_WRONLY|O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+                    dup2 (fd, 1); // overwriting stdout with the new file
+                    execute(tparts[i].substr(0,outIndex-1));
+                }
+
+                else if(tparts[i].find('<') != -1)
+                {
+                    outIndex = tparts[i].find('>');
+                    string fileName = tparts[i].substr(outIndex+1);
+
+                    // remove spaces from fileName
+                    string temp;
+                    for(int i = 0; i < fileName.size(); i++)
+                    {
+                        if (fileName[i] != ' ')
+                        {
+                            temp = temp + fileName[i];
+                        }
+                    }
+                    fileName = temp;
+
+                    int fd = open (fileName.c_str(), O_RDONLY);
+                    dup2 (fd, 0); // overwriting stdout with the new file
+                    execute(tparts[i].substr(0,outIndex-1));
+                }
+
                 // redirect output to the next level
                 // unless this is the last level
                 if (i < tparts.size() - 1){
