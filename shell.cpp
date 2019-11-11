@@ -230,44 +230,48 @@ int main (){
 
                 if(tparts[i].find('>') != -1)
                 {
-                    outIndex = tparts[i].find('>');
-                    string fileName = tparts[i].substr(outIndex+1);
+                    //outIndex = tparts[i].find('>');
+                    //string fileName = tparts[i].substr(outIndex+1);
 
                     // remove spaces from fileName
-                    string temp;
-                    for(int i = 0; i < fileName.size(); i++)
-                    {
-                        if (fileName[i] != ' ')
-                        {
-                            temp = temp + fileName[i];
-                        }
-                    }
-                    fileName = temp;
+                    // string temp;
+                    // for(int i = 0; i < fileName.size(); i++)
+                    // {
+                    //     if (fileName[i] != ' ')
+                    //     {
+                    //         temp = temp + fileName[i];
+                    //     }
+                    // }
+                    // fileName = temp;
 
-                    int fd = open (fileName.c_str(), O_CREAT|O_WRONLY|O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+                    vector<string> commandSplit = split(tparts[i], ">");
+
+                    int fd = open (commandSplit[1].c_str(), O_CREAT|O_WRONLY|O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
                     dup2 (fd, 1); // overwriting stdout with the new file
-                    execute(tparts[i].substr(0,outIndex-1));
+                    tparts[i] = commandSplit[0];
                 }
 
                 else if(tparts[i].find('<') != -1)
                 {
-                    outIndex = tparts[i].find('>');
-                    string fileName = tparts[i].substr(outIndex+1);
+                    // outIndex = tparts[i].find('>');
+                    // string fileName = tparts[i].substr(outIndex+1);
 
-                    // remove spaces from fileName
-                    string temp;
-                    for(int i = 0; i < fileName.size(); i++)
-                    {
-                        if (fileName[i] != ' ')
-                        {
-                            temp = temp + fileName[i];
-                        }
-                    }
-                    fileName = temp;
+                    // // remove spaces from fileName
+                    // string temp;
+                    // for(int i = 0; i < fileName.size(); i++)
+                    // {
+                    //     if (fileName[i] != ' ')
+                    //     {
+                    //         temp = temp + fileName[i];
+                    //     }
+                    // }
+                    // fileName = temp;
 
-                    int fd = open (fileName.c_str(), O_RDONLY);
+                    vector<string> commandSplit = split(tparts[i], "<");
+
+                    int fd = open (commandSplit[1].c_str(), O_RDONLY);
                     dup2 (fd, 0); // overwriting stdout with the new file
-                    execute(tparts[i].substr(0,outIndex-1));
+                    tparts[i] = commandSplit[0];
                 }
 
                 // redirect output to the next level
