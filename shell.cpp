@@ -151,7 +151,7 @@ vector<string> decode(vector<string> tparts)
             }
             else if(currentString[j] == '\v')
             {
-                newString[j] += '>';
+                newString += '>';
             }
             else if(currentString[j] == '\f')
             {
@@ -237,7 +237,7 @@ int main (){
 
 			if (!pid){
 
-                if(tparts[i].find('>') != -1)
+                if(tparts[i].find('>') != -1 && tparts[i].find("echo") == string::npos)
                 {
                     vector<string> commandSplit = split(tparts[i], ">");
 
@@ -246,7 +246,7 @@ int main (){
                     tparts[i] = commandSplit[0];
                 }
 
-                else if(tparts[i].find('<') != -1)
+                if(tparts[i].find('<') != -1 && tparts[i].find("echo") == string::npos)
                 {
                     vector<string> commandSplit = split(tparts[i], "<");
 
