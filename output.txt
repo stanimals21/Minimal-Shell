@@ -1,0 +1,7 @@
+root[kthreadd]
+root[kworker/0:0H-kblockd]
+root[mm_percpu_wq]
+root[rcu_gp]
+root[rcu_par_gp]
+root/sbin/init
+USERCOMMAND

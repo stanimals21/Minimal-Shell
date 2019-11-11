@@ -218,8 +218,6 @@ int main (){
         tparts = removeSpaces(tparts);        
 
         int originalFd = dup(0); // to redirect stdin back to console at end of parent process 
-        int outIndex = -1;
-        int inIndex = -1;
 
         // for each pipe, do the following:
         for (int i=0; i<tparts.size(); i++){
@@ -230,20 +228,6 @@ int main (){
 
                 if(tparts[i].find('>') != -1)
                 {
-                    //outIndex = tparts[i].find('>');
-                    //string fileName = tparts[i].substr(outIndex+1);
-
-                    // remove spaces from fileName
-                    // string temp;
-                    // for(int i = 0; i < fileName.size(); i++)
-                    // {
-                    //     if (fileName[i] != ' ')
-                    //     {
-                    //         temp = temp + fileName[i];
-                    //     }
-                    // }
-                    // fileName = temp;
-
                     vector<string> commandSplit = split(tparts[i], ">");
 
                     int fd = open (commandSplit[1].c_str(), O_CREAT|O_WRONLY|O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
@@ -253,27 +237,13 @@ int main (){
 
                 else if(tparts[i].find('<') != -1)
                 {
-                    // outIndex = tparts[i].find('>');
-                    // string fileName = tparts[i].substr(outIndex+1);
-
-                    // // remove spaces from fileName
-                    // string temp;
-                    // for(int i = 0; i < fileName.size(); i++)
-                    // {
-                    //     if (fileName[i] != ' ')
-                    //     {
-                    //         temp = temp + fileName[i];
-                    //     }
-                    // }
-                    // fileName = temp;
-
                     vector<string> commandSplit = split(tparts[i], "<");
 
                     int fd = open (commandSplit[1].c_str(), O_RDONLY);
                     dup2 (fd, 0); // overwriting stdout with the new file
                     tparts[i] = commandSplit[0];
                 }
-
+                
                 // redirect output to the next level
                 // unless this is the last level
                 if (i < tparts.size() - 1){
